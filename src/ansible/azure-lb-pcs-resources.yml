@@ -3,17 +3,17 @@
   vars:
     groups_re: '(?P<group_name>[a-zA-Z0-9_-]+):\s+(?P<resources>[a-zA-Z0-9\s_-]+)'
   tasks:
-    - name: Ottieni la lista di risorse IPaddr2
+    - name: Get IPaddr2 resources
       shell: pcs resource group list
       register: pcs_groups_output
-    - name: Estrai i nomi delle risorse IPaddr2
+    - name: Extract group names and resources
       set_fact:
         ipaddr2_names: >-
           {{
              pcs_groups_output.stdout_lines
             | regex_findall(groups_re)
           }}
-    - name: Espandi ogni gruppo in risorse individuali
+    - name: Expand group resources
       set_fact:
         expanded_group_resources: "{{ expanded_group_resources | default({}) | combine({ label: res_list }) }}"
       loop: "{{ ipaddr2_names }}"

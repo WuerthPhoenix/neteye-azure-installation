@@ -20,8 +20,8 @@
 ```hcl
 azure_subscription_id = "<The Azure subscription ID from the previous step>"
 
-resource_group_name  = "103956_RD-Testing"
-resource_name_prefix = "neteye_terraform_test"
+resource_group_name  = "neteye_group"
+resource_name_prefix = "neteye_terraform"
 cluster_size         = 2
 vm_size              = "Standard_E4as_v5"
 disk_size            = 256

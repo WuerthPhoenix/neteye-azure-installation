@@ -112,7 +112,7 @@ Enable the IPs on `repo.wuerth-phoenix.com`.
 > [!WARNING]
 > Note that the nodes start from index 00 (and not 01, i.e. `neteye00.example.it`).
 
-At this point you should have more or less a VM bootstrapped with a Neteye ISO. You can follow the guide at [Cluster Nodes - NetEye User Guide](https://neteye.guide/4.42/getting-started/system-installation/cluster.html).
+At this point you should have more or less a VM bootstrapped with a Neteye ISO. You can follow the guide at [Cluster Nodes - NetEye User Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html).
 
 > [!CAUTION]
 > Terraform tends to override manual changes to resources if you re-run it. Be conscious of this behavior and ensure any manual steps are documented and reapplied as needed.

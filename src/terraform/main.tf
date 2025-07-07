@@ -176,18 +176,3 @@ resource "azurerm_linux_virtual_machine" "vm" {
     ]
   }
 }
-
-
-# resource "ansible_host" "ansible_inventory" {
-#   count = var.cluster_size
-#   name  = azurerm_linux_virtual_machine.vm[count.index].name
-#   groups = ["azure", "rhel_hosts"]
-#   variables = {
-#     ansible_host         = azurerm_public_ip.vm_public_ip[count.index].ip_address
-#     ansible_user         = "neteye_service_root"
-#     ansible_password     = random_password.admin_password.result
-#     neteye_version       = var.neteye_version
-#     private_ipv4_address = azurerm_network_interface.external_nic[count.index].private_ip_address
-#     provisioner_tag = var.resource_name_prefix
-#   }
-# }

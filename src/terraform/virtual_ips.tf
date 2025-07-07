@@ -140,3 +140,17 @@ resource "azurerm_lb_rule" "external_vip_lb_rule" {
   probe_id                       = azurerm_lb_probe.external_vip_health_probe.id
   enable_floating_ip             = true
 }
+
+resource "azurerm_network_security_rule" "neteye_ports" {
+  name                        = "neteye_ports"
+  priority                    = 100
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = local.external_fip_accessible_ports
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.rg.name
+  network_security_group_name = azurerm_network_security_group.external.name
+}

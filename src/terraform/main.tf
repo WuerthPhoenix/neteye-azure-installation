@@ -36,7 +36,7 @@ resource "azurerm_network_security_group" "external" {
 
 resource "azurerm_network_security_rule" "ssh" {
   name                        = "ssh"
-  priority                    = 100
+  priority                    = 200
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
@@ -56,7 +56,7 @@ resource "azurerm_subnet_network_security_group_association" "external" {
 resource "azurerm_public_ip" "vm_public_ips" {
   for_each = local.vms_configuration
 
-  name                = "${var.resource_name_prefix}${each.key}-PublicIp"
+  name                = format("%s%02d-PublicIp", var.resource_name_prefix, each.key)
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
   allocation_method   = "Static"
@@ -78,7 +78,7 @@ resource "azurerm_subnet" "external" {
 resource "azurerm_network_interface" "external_nic" {
   for_each = local.vms_configuration
 
-  name                  = "${var.resource_name_prefix}${each.key}-Nic"
+  name                  = format("%s%02d-Nic", var.resource_name_prefix, each.key)
   resource_group_name   = data.azurerm_resource_group.rg.name
   location              = data.azurerm_resource_group.rg.location
   ip_forwarding_enabled = true
@@ -95,7 +95,7 @@ resource "azurerm_network_interface" "external_nic" {
 resource "azurerm_managed_disk" "data_disk" {
   for_each = local.vms_configuration
 
-  name                 = "${var.resource_name_prefix}${each.key}-DataDisk"
+  name                 = format("%s%02d-DataDisk", var.resource_name_prefix, each.key)
   location             = data.azurerm_resource_group.rg.location
   resource_group_name  = data.azurerm_resource_group.rg.name
   storage_account_type = "StandardSSD_LRS"
@@ -141,7 +141,6 @@ resource "azurerm_linux_virtual_machine" "vm" {
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "StandardSSD_LRS"
-    name                 = "${var.resource_name_prefix}${each.key}-OsDisk"
   }
 
   network_interface_ids = [azurerm_network_interface.external_nic[each.key].id]
@@ -156,9 +155,9 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
     inline = [
       <<-SH
-      %{for vm in local.vms_configuration~}
-        echo "${vm.ip} ${format("neteye%02d.neteyelocal", vm.key)}" | sudo tee -a /etc/hosts
-        echo "${azurerm_public_ip.vm_public_ips[vm.key].ip_address} ${vm.hostname}" | sudo tee -a /etc/hosts
+      %{for key, vm in local.vms_configuration~}
+        echo "${vm.ip} ${format("neteye%02d.neteyelocal", key)}" | sudo tee -a /etc/hosts
+        echo "${azurerm_public_ip.vm_public_ips[key].ip_address} ${vm.hostname}" | sudo tee -a /etc/hosts
       %{endfor}
       SH
     ]

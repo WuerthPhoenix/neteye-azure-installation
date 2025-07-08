@@ -101,8 +101,10 @@ Enable the IPs on `repo.wuerth-phoenix.com`.
 > setenforce permissive
 > ```
 
-- Remember to set the correct `DNF0` variable
-- Run (on all nodes) this script: `src/scripts/rhel-to-neteye.sh`.
+Run (on all nodes) this script: `src/scripts/rhel-to-neteye.sh` passing the NetEye version. For example:
+```sh
+rhel-to-neteye.sh 4.43
+```
 
 > [!WARNING]
 > Restart the shell to populate all the new environment variables: `exec bash`

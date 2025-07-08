@@ -2,12 +2,16 @@
 
 set -exuo pipefail
 
-export DNF0=4.42
+if [[ $# -lt 1 ]]; then
+    echo "Usage: $0 <NETEYE_VERSION>"
+    exit 1
+fi
+export NETEYE_VERSION="$1"
 
 cat <<'EOF' >/etc/yum.repos.d/NetEye.repo
 [neteye]
 name=NetEye
-baseurl=https://repo.wuerth-phoenix.com/rhel8/neteye-$DNF0
+baseurl=https://repo.wuerth-phoenix.com/rhel8/neteye-$NETEYE_VERSION
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-NETEYE
 enabled=0

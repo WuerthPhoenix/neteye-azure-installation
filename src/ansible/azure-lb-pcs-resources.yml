@@ -1,0 +1,67 @@
+- hosts: localhost
+  gather_facts: false
+  vars:
+    groups_re: '(?P<group_name>[a-zA-Z0-9_-]+):\s+(?P<resources>[a-zA-Z0-9\s_-]+)'
+  tasks:
+    - name: Get IPaddr2 resources
+      shell: pcs resource group list
+      register: pcs_groups_output
+    - name: Extract group names and resources
+      set_fact:
+        ipaddr2_names: >-
+          {{
+             pcs_groups_output.stdout_lines
+            | regex_findall(groups_re)
+          }}
+    - name: Expand group resources
+      set_fact:
+        expanded_group_resources: "{{ expanded_group_resources | default({}) | combine({ label: res_list }) }}"
+      loop: "{{ ipaddr2_names }}"
+      vars:
+        label: "{{item[0]}}"
+        res_list: "{{ item[1].split() }}"
+    - name: Convert dict to list of key/value
+      set_fact:
+        resources: "{{ expanded_group_resources | dict2items }}"
+    - name: Create flattened list
+      set_fact:
+        flat_resources: "{{ flat_resources | default([]) + [{'group': item.0.key, 'resource': item.1}] }}"
+      loop: "{{ resources | subelements('value') }}"
+      loop_control:
+        label: "{{ item.0.key }} - {{ item.1 }}"
+    - name: Get resource config
+      shell: "pcs resource config {{item.resource}}"
+      register: pcs_resource_config
+      loop: "{{flat_resources}}"
+    - name: Get only ip addr2
+      set_fact:
+        extracted_list: "{{ extracted_list | default([]) + [ { 'group': item.item.group, 'resource': item.item.resource, 'ip': (item.stdout | regex_search('ip=([^\\s]+)', '\\1'))  | default([''], True) | first | split('.') | last, 'type':(item.stdout | regex_search('type=([^\\s)]+)', '\\1'))  | default([None], True) | first } ] }}"
+      loop: "{{ pcs_resource_config.results }}"
+      when: item.stdout is search('type=IPaddr2') or item.stdout is search('type=azure-lb')
+    - name: Build grouped dict with VS list
+      set_fact:
+        grouped_dict: >-
+          {{
+            grouped_dict | default({}) | combine({
+              item.group: {
+                'resources': (grouped_dict[item.group].resources | default([])) + [item]
+              }
+            }, recursive=True)
+          }}
+      loop: "{{ extracted_list }}"
+      loop_control:
+        label: "{{ item.group }}"
+    - name: Add groups that do NOT contain type=azure-lb
+      set_fact:
+        groups_without_azure_lb: "{{ groups_without_azure_lb | default([]) + [item.key] }}"
+      loop: "{{ grouped_dict | dict2items }}"
+      when: item.value.resources | selectattr('type', 'equalto', 'azure-lb') | list | length == 0
+    - name: Add azure lb for each group
+      loop: "{{groups_without_azure_lb}}"
+      shell: "pcs resource create {{item}}_azure_lb azure-lb port={{ (grouped_dict[item].resources | selectattr('type', 'equalto', 'IPaddr2') | first | default({})).ip  | int + 61000 }} --group {{item}} --after {{item | split('_') | first }}_virt_ip"
+      when: grouped_dict[item].resources | selectattr('type', 'equalto', 'IPaddr2') | list | length > 0
+      register: command
+    - name: Add cluster ip res
+      shell: pcs resource create cluster_ip_azure_lb azure-lb port=61000
+    - name: Add colocation
+      shell: pcs constraint colocation add cluster_ip_azure_lb with cluster_ip INFINITY

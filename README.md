@@ -6,16 +6,16 @@
 > To provision the infrastructure, you must have both the `terraform` and `az` (Azure) CLI tools installed on your PC.
 
 > [!WARNING]
-> Terraform will create a `terraform.tfstate` file, this file contains the configuration of the resources on Azure and some credentials. It must be considered a SECRET and must not be lost.
+> Terraform will create a `terraform.tfstate` file, which contains the configuration of the resources on Azure and some credentials. It must be considered a SECRET and must not be lost.
 
-- The terraform files are in the directory `/src/terraform`.
+- The terraform files are kept in the directory `/src/terraform`.
 - Follow this configuration guide to setup the terraform variables, afterwards you can follow the first part of the README.md file to deploy the resources on Azure.
 
 ### Terraform variables configuration
 
 1. Login on Azure witn `az login` (follow the login procedure on [Azure Terraform Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/azure_cli)).
 2. Gather the Azure subscription ID with `az account list`.
-3. Create a file `*.tfvars` with the following content (of course change the variable values as you see fit):
+3. Create a file `*.tfvars` with the following content (make sure you change the variable values as you see fit):
 
 ```hcl
 azure_subscription_id = "<The Azure subscription ID from the previous step>"
@@ -34,7 +34,7 @@ The variables are:
 - `resource_name_prefix`: the prefix for the names of all the resources that will be created, including the VMs.
 - `vm_hostname_template`: the template to be used to generate the external hostnames of each VM. It must contain the string %02d where the number of the VM must be written (e.g. `neteye%02d.test.it` for VM 1 will be `neteye01.test.it`).
 - `cluster_size`: the number of virtual machines to be created.
-- `vm_size`: the size to be used when creating the virtual machines. Check the Azure documentation for valid values.
+- `vm_size`: the size to be used when creating the virtual machines. Check the Check the [Azure documentation](https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview) for valid values.
 - `disk_size`: the size of the data disk in GB.
 
 ### Provision the resources
@@ -53,21 +53,22 @@ terraform output --raw admin_password
 
 ### Delete the resources
 
-To start the deletion process run the following command:
+To start the deletion process — which is handy for cleanup after creating a test
+cluster, for example — run the following command:
 
 ```sh
 terraform destroy --var-file "<file defined previously>.tfvars"
 ```
 
 > [!NOTE]
-> Try to not change manually the configuration of the created resources, if you
+> Try not to change the configuration of the created resources manually, if you
 > need to make changes modify the code and open a PR.
 >
 > To correctly delete the created resources you need to run the `destroy` command
 > from the same place that ran the `apply` command (it needs to have the same state
 > saved in `terraform.tfstate`).
 
-## Configure the VMs to create a Neteye cluster
+## Configure the VMs to create a NetEye cluster
 
 > [!WARNING]
 > There is only one NIC per VM (thus only one subnet). For this reason you must set the NIC as Trusted:
@@ -84,7 +85,7 @@ terraform destroy --var-file "<file defined previously>.tfvars"
 >
 > The `/etc/hosts` file is already populated with both internal and external IPs.
 
-### 1. Transform RHEL to Neteye
+### 1. Transform RHEL to NetEye
 
 Enable the IPs on `repo.wuerth-phoenix.com`.
 
@@ -109,15 +110,15 @@ rhel-to-neteye.sh 4.43
 > [!WARNING]
 > Restart the shell to populate all the new environment variables: `exec bash`
 
-### 2. Follow Neteye Guide until Fencing
+### 2. Follow NetEye Guide until Fencing
 
 > [!WARNING]
 > Note that the nodes start from index 00 (and not 01, i.e. `neteye00.example.it`).
 
-At this point you should have more or less a VM bootstrapped with a Neteye ISO. You can follow the guide at [Cluster Nodes - NetEye User Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html).
+At this point you should have more or less a VM bootstrapped with a NetEye ISO. You can follow the guide at [Cluster Nodes - NetEye User Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html).
 
 > [!CAUTION]
-> Terraform tends to override manual changes to resources if you re-run it. Be conscious of this behavior and ensure any manual steps are documented and reapplied as needed.
+> Terraform tends to override manual changes to resources if you re-run it. Be aware of this behavior and ensure any manual steps are documented and reapplied as needed.
 > 
 > Please see:
 > - [Creating an Azure Active Directory application - Red Hat Documentation](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/deploying_rhel_8_on_microsoft_azure/configuring-rhel-high-availability-on-azure_cloud-content-azure#azure-create-an-azure-directory-application-in-ha_configuring-rhel-high-availability-on-azure)
@@ -144,7 +145,7 @@ Set the correct `volume_group`, and `10.1.0` as `ip_pre`.
 > [!WARNING]
 > Don’t change the default ip_post value.
 
-Run the Perl script as described in the Neteye Guide.
+Run the Perl script as [described in the NetEye Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html#pcs-managed-services).
 
 ### 5. Add azure-lb pcs resources
 
@@ -153,6 +154,6 @@ You can run the `src/ansible/azure-lb-pcs-resources.yml` Ansible playbook (on on
 > [!WARNING]
 > If you run this playbook multiple times, the last two tasks (`Add cluster ip res` and `Add colocation`) will fail on subsequent runs because the resources already exist. This is expected behavior.
 
-### 6. Continue normal configuration
+### 6. Proceed with regular configuration
 
-You can continue following the Neteye Guide as usual from [Cluster Nodes - NetEye User Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html#ne-service-configuration) onwards.
+You can continue following the NetEye Guide as usual from [Cluster Nodes - NetEye User Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html#ne-service-configuration) onwards.

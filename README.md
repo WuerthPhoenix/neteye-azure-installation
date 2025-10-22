@@ -14,7 +14,8 @@
 ### Terraform variables configuration
 #### Prerequisites
 If you are using a principal:
-1. Create or request an Azure Service Principal (follow the login procedure on [Azure Provider: Authenticating using a Service Principal with a Client Secret](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/service_principal_client_secret)).
+- Create or request an Azure Service Principal (follow the login procedure on [Azure Provider: Authenticating using a Service Principal with a Client Secret](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/service_principal_client_secret)).
+- The principal must have at least the `Network Contributor` and `Virtual Machine Contributor` roles on the subscription and resource group you want to use.
 
 If you are using user authentication:
 1. Login on Azure witn `az login` (follow the login procedure on [Azure Terraform Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/azure_cli)).

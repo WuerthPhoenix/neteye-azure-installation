@@ -4,6 +4,27 @@ variable "azure_subscription_id" {
   description = "The Azure subscription ID used to authenticate with Azure"
 }
 
+variable "azure_client_id" {
+  type        = string
+  sensitive   = true
+  description = "The Azure Principal client ID used to authenticate with Azure"
+  default     = null
+}
+
+variable "azure_client_secret" {
+  type        = string
+  sensitive   = true
+  description = "The Azure Principal client secret used to authenticate with Azure"
+  default     = null
+}
+
+variable "azure_tenant_id" {
+  type        = string
+  sensitive   = true
+  description = "The Azure Principal tenant ID used to authenticate with Azure"
+  default     = null
+}
+
 variable "resource_group_name" {
   type        = string
   description = "The name of the resource group in which the resources will be created."

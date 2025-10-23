@@ -12,24 +12,39 @@
 - Follow this configuration guide to setup the terraform variables, afterwards you can follow the first part of the README.md file to deploy the resources on Azure.
 
 ### Terraform variables configuration
+#### Prerequisites
+If you are using a principal:
+- Create or request an Azure Service Principal (follow the login procedure on [Azure Provider: Authenticating using a Service Principal with a Client Secret](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/service_principal_client_secret)).
+- The principal must have at least the `Network Contributor` and `Virtual Machine Contributor` roles on the subscription and resource group you want to use.
 
+If you are using user authentication:
 1. Login on Azure witn `az login` (follow the login procedure on [Azure Terraform Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/azure_cli)).
-2. Gather the Azure subscription ID with `az account list`.
-3. Create a file `*.tfvars` with the following content (make sure you change the variable values as you see fit):
+
+#### Configure the variables
+1. Gather the Azure subscription ID with `az account list`.
+2. Navigate to the `cd src/terraform` directory.
+3. If it is the first time you use terraform on this machine, run `terraform init` to initialize the working directory.
+4. Create a file `*.tfvars` with the following content (make sure you change the variable values as you see fit):
 
 ```hcl
-azure_subscription_id = "<The Azure subscription ID from the previous step>"
+azure_client_id: "<pricipal client id>"
+azure_client_secret: "<principal client secret>"
+azure_tenant_id: "<principal tenant id>"
+azure_subscription_id: "<principal subscription id>"
 
 resource_group_name  = "neteye_group"
 resource_name_prefix = "neteye_terraform"
+vm_hostname_template = "neteye%02d.test.it"
 cluster_size         = 2
 vm_size              = "Standard_E4as_v5"
 disk_size            = 256
 ```
 
 The variables are:
-
-- `azure_subscription_id`: the Azure subscription ID
+- `azure_subscription_id`: Azure subscription ID
+- `azure_subscription_id`: Azure subscription ID (only if you are using a principal)
+- `azure_client_secret`: Azure Service Principal client secret (only if you are using a principal)
+- `azure_tenant_id`: Azure Service Principal tenant ID (only if you are using a principal)
 - `resource_group_name`: the name of the resource group in which the resources will be created.
 - `resource_name_prefix`: the prefix for the names of all the resources that will be created, including the VMs.
 - `vm_hostname_template`: the template to be used to generate the external hostnames of each VM. It must contain the string %02d where the number of the VM must be written (e.g. `neteye%02d.test.it` for VM 1 will be `neteye01.test.it`).

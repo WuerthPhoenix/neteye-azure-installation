@@ -82,7 +82,7 @@ resource "azurerm_lb_rule" "vip_lb_rule" {
   backend_port                   = 0
   frontend_ip_configuration_name = each.value.name
   probe_id                       = azurerm_lb_probe.vip_health_probes[each.key].id
-  floating_ip_enabled            = false
+  floating_ip_enabled            = true
 }
 
 # External Floating IP
@@ -138,7 +138,6 @@ resource "azurerm_lb_rule" "external_vip_lb_rule" {
   backend_port                   = each.value
   frontend_ip_configuration_name = azurerm_lb.external_lb.frontend_ip_configuration[0].name
   probe_id                       = azurerm_lb_probe.external_vip_health_probe.id
-  floating_ip_enabled            = false
 }
 
 resource "azurerm_network_security_rule" "neteye_ports" {

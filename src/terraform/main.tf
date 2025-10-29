@@ -96,6 +96,7 @@ resource "azurerm_managed_disk" "data_disk" {
   storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
   disk_size_gb         = var.disk_size
+  zone = each.value.zone
 }
 resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attachment" {
   for_each = local.vms_configuration
@@ -140,34 +141,4 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   network_interface_ids = [azurerm_network_interface.external_nic[each.key].id]
 
-  provisioner "remote-exec" {
-    connection {
-      type     = "ssh"
-      user     = self.admin_username
-      password = self.admin_password
-      host     = self.public_ip_address
-    }
-
-    inline = [
-      <<-SH
-      %{for key, vm in local.vms_configuration~}
-        echo "${vm.ip} ${format("neteye%02d.neteyelocal", key)}" | sudo tee -a /etc/hosts
-        echo "${azurerm_public_ip.vm_public_ips[key].ip_address} ${vm.hostname}" | sudo tee -a /etc/hosts
-      %{endfor}
-      SH
-    ]
-  }
-
-  provisioner "remote-exec" {
-    connection {
-      type     = "ssh"
-      user     = self.admin_username
-      password = self.admin_password
-      host     = self.public_ip_address
-    }
-    when = destroy
-    inline = [
-      "sudo subscription-manager unsubscribe --all",
-    ]
-  }
 }

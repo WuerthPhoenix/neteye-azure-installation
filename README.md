@@ -134,7 +134,7 @@ properly configure the `/etc/hosts` file with the internal IPs. Should looks lik
 10.1.0.4 neteye00.neteyelocal neteye00.example.com neteye00
 10.1.0.5 neteye01.neteyelocal neteye01.example.com neteye01
 10.1.0.6 neteye02.neteyelocal neteye02.example.com neteye02
-<public_ip> neteye.vaal.it neteye.neteyelocal
+<public_ip> neteye.example.com neteye.neteyelocal
 ```
 
 > [!WARNING]

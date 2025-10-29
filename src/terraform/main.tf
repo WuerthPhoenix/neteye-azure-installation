@@ -10,7 +10,7 @@ resource "random_password" "admin_password" {
 locals {
   network_prefix = "10.1.0.0/24"
   # NOTE: The first 4 IPs are reserved by Azure
-  vm_base_ip_idx    = 4
+  vm_base_ip_idx = 4
 
   vms_configuration = zipmap(
     range(var.cluster_size),
@@ -18,7 +18,7 @@ locals {
       hostname = format(var.vm_hostname_template, i)
       ip       = cidrhost(local.network_prefix, local.vm_base_ip_idx + i)
       # Cyclically distribute VMs across available zones
-      zone     = var.azure_availability_zones[i % length(var.azure_availability_zones)]
+      zone = var.azure_availability_zones[i % length(var.azure_availability_zones)]
     }]
   )
 }
@@ -96,7 +96,7 @@ resource "azurerm_managed_disk" "data_disk" {
   storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
   disk_size_gb         = var.disk_size
-  zone = each.value.zone
+  zone                 = each.value.zone
 }
 resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attachment" {
   for_each = local.vms_configuration
@@ -119,7 +119,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   admin_username                  = "ne_root"
   admin_password                  = random_password.admin_password.result
   disable_password_authentication = false
-  zone = each.value.zone
+  zone                            = each.value.zone
 
   source_image_reference {
     publisher = "redhat"

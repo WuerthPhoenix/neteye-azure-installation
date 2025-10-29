@@ -1,0 +1,137 @@
+---
+- hosts: localhost
+  gather_facts: false
+  any_errors_fatal: true
+  connection: local
+
+  vars:
+    php_version: "7.4"
+    python36_version: "3.6"
+    neteye_groups_to_install:
+      - "@base"
+      - "@core"
+      - "@neteye"
+      - "@neteye-tools"
+    neteye_base_repo: "neteye"
+    neteye_extra_repo: "neteye-extras"
+    neteye_os_repo: "neteye-os"
+
+  tasks:
+    - name: Prepare | ensure neteye_version is defined
+      ansible.builtin.assert:
+        that:
+          - neteye_version is defined
+        fail_msg: "neteye_version variable is not defined."
+
+    - name: Configure Repos | disable rhv-4-tools-for-rhel-8-x86_64-rpms repo and rhui-rhel-8-for-x86_64-baseos-rhui-rpms
+      ansible.builtin.yum_repository:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - rhv-4-tools-for-rhel-8-x86_64-rpms
+        - rhui-rhel-8-for-x86_64-baseos-rhui-rpms
+
+    - name: Configure Repos | override appstream repo to prevent ansible-core upgrade
+      command:
+        cmd: "subscription-manager repo-override --repo=rhel-8-for-x86_64-appstream-rpms --add=exclude:ansible-core*"
+
+    - name: Configure Repos | enable rhel repos
+      ansible.builtin.command:
+        cmd: "subscription-manager repos --enable rhel-8-for-x86_64-baseos-rpms --enable codeready-builder-for-rhel-8-x86_64-rpms --enable ansible-2-for-rhel-8-x86_64-rpms --enable rhel-8-for-x86_64-highavailability-rpms --enable openstack-15-tools-for-rhel-8-x86_64-rpms"
+
+    - name: Configure Repos | templating temporary repo definitions
+      template:
+        src: Rhel-NetEye.repo.j2
+        dest: /etc/yum.repos.d/Rhel-NetEye-temporary.repo
+
+    - name: install | install streams
+      ansible.builtin.dnf:
+        name:
+          - "@php:{{ php_version }}"
+          - "@python36:{{ python36_version }}"
+        state: present
+        disablerepo:
+          - "neteye*"
+
+    - name: Configure Repos | install NetEye repository definitions
+      ansible.builtin.dnf:
+        name:
+          - "neteye"
+          - "neteye-stable"
+          - "ansible-core" # needed for rpmmirror
+        state: present
+        enablerepo:
+          - "{{ neteye_base_repo }}"
+          - "{{ neteye_os_repo }}"
+
+    - name: Configure Repos | remove NetEye temporary repos
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/yum.repos.d/Rhel-NetEye-temporary.repo
+
+    - name: Configure Repos | clean yum cache
+      ansible.builtin.command: "yum clean metadata"
+
+    - name: Configure Repos | add rpm mirror before running installer
+      ansible.builtin.command: "neteye rpmmirror apply"
+
+    - name: Install | install core groups
+      ansible.builtin.dnf:
+        name: "{{ neteye_groups_to_install }}"
+        enablerepo:
+          - "{{ neteye_base_repo }}"
+          - "{{ neteye_os_repo }}"
+        state: latest
+      environment:
+        DNF0: "{{ neteye_version }}"
+
+    - name: Install | update system packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        disablerepo:
+          - "neteye*"
+
+    - name: Configure System | check if dhclinet rpmnew exists
+      ansible.builtin.stat: path="/etc/dhcp/dhclient.conf.rpmnew"
+      register: dhclient_fedora_rpmnew
+
+    - name: Configure System | move dhclient.conf.rpmnew to dhclient.conf
+      ansible.builtin.command: mv /etc/dhcp/dhclient.conf.rpmnew /etc/dhcp/dhclient.conf
+      when: dhclient_fedora_rpmnew.stat.exists
+
+    - name: Configure System | check if /etc/ssh/sshd_config.rpmnew exists
+      ansible.builtin.stat: path="/etc/ssh/sshd_config.rpmnew"
+      register: ssh_fedora_rpmnew
+
+    - name: Configure System | move sshd_config.rpmneww to /etc/ssh/sshd_config
+      ansible.builtin.command: mv /etc/ssh/sshd_config.rpmnew /etc/ssh/sshd_config
+      when: ssh_fedora_rpmnew.stat.exists
+
+    - name: Configure System | Check current firewall default zone
+      ansible.builtin.command:
+        cmd: firewall-cmd --get-default-zone
+      register: current_default_zone
+      changed_when: false
+
+    - name: Configure System | Set current firewall default zone to trusted
+      ansible.builtin.command:
+        cmd: firewall-cmd --set-default-zone=trusted
+      when: current_default_zone.stdout | trim != "trusted"
+
+    - name: Configure System | Reload firewalld
+      ansible.builtin.service:
+        name: firewalld
+        state: reloaded
+
+    - name: Configure System | set SELinux to permissive in config file
+      ansible.builtin.lineinfile:
+        path: /etc/selinux/config
+        regexp: '^SELINUX='
+        line: 'SELINUX=permissive'
+        backup: yes
+
+    - name: Configure System | set SELinux to permissive mode immediately
+      ansible.builtin.command: setenforce permissive

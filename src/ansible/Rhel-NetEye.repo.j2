@@ -1,0 +1,12 @@
+# NetEye temporary repo for installing ne packages and repo definitions
+[neteye]
+name=NetEye
+baseurl=https://repo.wuerth-phoenix.com/rhel8/neteye-{{ neteye_version }}
+gpgcheck=0
+enabled=0
+
+[neteye-os]
+name=NetEye OS
+baseurl=https://repo.wuerth-phoenix.com/rhel8/neteye-{{ neteye_version }}-os
+gpgcheck=0
+enabled=0

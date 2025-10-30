@@ -125,12 +125,24 @@ rhel-to-neteye.sh 4.43
 > [!WARNING]
 > Restart the shell to populate all the new environment variables: `exec bash`
 
-### 2. Follow NetEye Guide until Fencing
+### 2. Setup basic cluster
+
+At this point you can follow the guide at [Cluster Nodes - NetEye User Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html), remember to 
+properly configure the `/etc/hosts` file with the internal IPs. Should looks like this:
+```commandline
+[...]
+10.1.0.4 neteye00.neteyelocal neteye00.example.com neteye00
+10.1.0.5 neteye01.neteyelocal neteye01.example.com neteye01
+10.1.0.6 neteye02.neteyelocal neteye02.example.com neteye02
+<public_ip> neteye.example.com neteye.neteyelocal
+```
 
 > [!WARNING]
 > Note that the nodes start from index 00 (and not 01, i.e. `neteye00.example.it`).
+> 
+> The public IP does not really matter on azure, since we are using a load balancer, but it is required
+> to successfully complete the `neteye install`
 
-At this point you should have more or less a VM bootstrapped with a NetEye ISO. You can follow the guide at [Cluster Nodes - NetEye User Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html).
 
 > [!CAUTION]
 > Terraform tends to override manual changes to resources if you re-run it. Be aware of this behavior and ensure any manual steps are documented and reapplied as needed.
@@ -150,7 +162,14 @@ At this point you should have more or less a VM bootstrapped with a NetEye ISO. 
 pcs resource update cluster_ip nic=eth0
 ```
 
-### 4. Edit and setup cluster templates
+### 4. Setup cluster resources
+
+Configure LVM with the wanted configuration, for example:
+
+```sh
+vgcreate vg00 /dev/sdb
+vgs
+```
 
 > [!NOTE]
 > For Non PCS-managed Services you can follow the steps on the guide.
@@ -158,13 +177,17 @@ pcs resource update cluster_ip nic=eth0
 Set the correct `volume_group`, and `10.1.0` as `ip_pre`.
 
 > [!WARNING]
-> Don’t change the default ip_post value.
+> Don’t change the default ip_post value and do not run the `neteye install` command.
 
-Run the Perl script as [described in the NetEye Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html#pcs-managed-services).
+Run the Perl script as [described in the NetEye Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html#pcs-managed-services) to create PCS resources.
+
 
 ### 5. Add azure-lb pcs resources
 
-You can run the `src/ansible/azure-lb-pcs-resources.yml` Ansible playbook (on one node).
+Upload the playbook `src/ansible/azure-lb-pcs-resources.yml` to **one** machine and run it:
+```commandline
+ansible-playbook -i localhost, azure-lb-pcs-resources.yml
+```
 
 > [!WARNING]
 > If you run this playbook multiple times, the last two tasks (`Add cluster ip res` and `Add colocation`) will fail on subsequent runs because the resources already exist. This is expected behavior.

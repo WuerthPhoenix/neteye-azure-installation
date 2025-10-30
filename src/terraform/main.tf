@@ -10,22 +10,17 @@ resource "random_password" "admin_password" {
 locals {
   network_prefix = "10.1.0.0/24"
   # NOTE: The first 4 IPs are reserved by Azure
-  vm_base_ip_idx    = 4
-  fw_allowed_prefix = "82.193.25.251/32"
+  vm_base_ip_idx = 4
 
   vms_configuration = zipmap(
     range(var.cluster_size),
     [for i in range(var.cluster_size) : {
       hostname = format(var.vm_hostname_template, i)
       ip       = cidrhost(local.network_prefix, local.vm_base_ip_idx + i)
+      # Cyclically distribute VMs across available zones
+      zone = var.azure_availability_zones[i % length(var.azure_availability_zones)]
     }]
   )
-}
-
-resource "azurerm_availability_set" "avail_set" {
-  name                = "${var.resource_name_prefix}-AvailSet"
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
 }
 
 resource "azurerm_network_security_group" "external" {
@@ -42,7 +37,7 @@ resource "azurerm_network_security_rule" "ssh" {
   protocol                    = "Tcp"
   source_port_range           = "*"
   destination_port_range      = 22
-  source_address_prefix       = local.fw_allowed_prefix
+  source_address_prefix       = var.fw_allowed_ssh_network
   destination_address_prefix  = "*"
   resource_group_name         = data.azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.external.name
@@ -101,6 +96,7 @@ resource "azurerm_managed_disk" "data_disk" {
   storage_account_type = "StandardSSD_LRS"
   create_option        = "Empty"
   disk_size_gb         = var.disk_size
+  zone                 = each.value.zone
 }
 resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attachment" {
   for_each = local.vms_configuration
@@ -118,12 +114,12 @@ resource "azurerm_linux_virtual_machine" "vm" {
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
   size                = var.vm_size
-  availability_set_id = azurerm_availability_set.avail_set.id
 
   computer_name                   = each.value.hostname
   admin_username                  = "ne_root"
   admin_password                  = random_password.admin_password.result
   disable_password_authentication = false
+  zone                            = each.value.zone
 
   source_image_reference {
     publisher = "redhat"
@@ -145,34 +141,4 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   network_interface_ids = [azurerm_network_interface.external_nic[each.key].id]
 
-  provisioner "remote-exec" {
-    connection {
-      type     = "ssh"
-      user     = self.admin_username
-      password = self.admin_password
-      host     = self.public_ip_address
-    }
-
-    inline = [
-      <<-SH
-      %{for key, vm in local.vms_configuration~}
-        echo "${vm.ip} ${format("neteye%02d.neteyelocal", key)}" | sudo tee -a /etc/hosts
-        echo "${azurerm_public_ip.vm_public_ips[key].ip_address} ${vm.hostname}" | sudo tee -a /etc/hosts
-      %{endfor}
-      SH
-    ]
-  }
-
-  provisioner "remote-exec" {
-    connection {
-      type     = "ssh"
-      user     = self.admin_username
-      password = self.admin_password
-      host     = self.public_ip_address
-    }
-    when = destroy
-    inline = [
-      "sudo subscription-manager unsubscribe --all",
-    ]
-  }
 }

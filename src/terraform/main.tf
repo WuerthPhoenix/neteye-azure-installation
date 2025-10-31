@@ -26,7 +26,7 @@ locals {
 }
 
 resource "azurerm_network_security_group" "external" {
-  name                = "${var.resource_name_prefix}ExternalSecurityGroup"
+  name                = "${var.resource_name_prefix}-ExternalSecurityGroup"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
 }
@@ -37,7 +37,7 @@ resource "azurerm_subnet_network_security_group_association" "external" {
 }
 
 resource "azurerm_virtual_network" "network" {
-  name = "${var.resource_name_prefix}Vnet"
+  name = "${var.resource_name_prefix}-Vnet"
   address_space = [
     local.network_prefix,
     local.bastion_network_prefix,

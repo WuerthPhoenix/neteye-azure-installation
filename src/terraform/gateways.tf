@@ -2,7 +2,7 @@
 # NAT Gateway to use unique public IP for outbound traffic, that can be whitelisted on the package repository
 # ----------------------------
 resource "azurerm_nat_gateway" "nat" {
-  name                = "${var.resource_name_prefix}NatGateway"
+  name                = "${var.resource_name_prefix}-NatGateway"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
   sku_name            = "Standard"
@@ -29,7 +29,7 @@ resource "azurerm_nat_gateway_public_ip_association" "nat_ip_assoc" {
 # Public IP used by the NAT Gateway
 # ----------------------------
 resource "azurerm_public_ip" "nat_ip" {
-  name                = "${var.resource_name_prefix}GatewayPublicIp"
+  name                = "${var.resource_name_prefix}-GatewayPublicIp"
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
   allocation_method   = "Static"
@@ -40,7 +40,7 @@ resource "azurerm_public_ip" "nat_ip" {
 # Application Gateway to access the webui
 # ---------------------------
 resource "azurerm_application_gateway" "app_gateway" {
-  name                = "${var.resource_name_prefix}gateway"
+  name                = "${var.resource_name_prefix}-gateway"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
 
@@ -51,34 +51,34 @@ resource "azurerm_application_gateway" "app_gateway" {
   }
 
   ssl_certificate {
-    name = "${var.resource_name_prefix}cert"
+    name = "${var.resource_name_prefix}-cert"
     data = filebase64(var.ssl_certificate_path)
   }
 
   gateway_ip_configuration {
-    name      = "${var.resource_name_prefix}gateway-ip"
+    name      = "${var.resource_name_prefix}-gateway-ip"
     subnet_id = azurerm_subnet.gateway.id
   }
 
   frontend_ip_configuration {
-    name                 = "${var.resource_name_prefix}frontend-ip"
+    name                 = "${var.resource_name_prefix}-frontend-ip"
     public_ip_address_id = azurerm_public_ip.gateway_ip.id
   }
 
   frontend_port {
-    name = "${var.resource_name_prefix}port-443"
+    name = "${var.resource_name_prefix}-port-443"
     port = 443
   }
 
   backend_address_pool {
-    name = "${var.resource_name_prefix}backend-pool-lb"
+    name = "${var.resource_name_prefix}-backend-pool-lb"
     ip_addresses = [
       local.neteye_cluster_ip
     ]
   }
 
   backend_http_settings {
-    name                  = "${var.resource_name_prefix}http-settings"
+    name                  = "${var.resource_name_prefix}-http-settings"
     cookie_based_affinity = "Disabled"
     port                  = 443
     protocol              = "Https"
@@ -86,25 +86,25 @@ resource "azurerm_application_gateway" "app_gateway" {
   }
 
   http_listener {
-    name                           = "${var.resource_name_prefix}listener-http"
-    frontend_ip_configuration_name = "${var.resource_name_prefix}frontend-ip"
-    frontend_port_name             = "${var.resource_name_prefix}port-443"
+    name                           = "${var.resource_name_prefix}-listener-http"
+    frontend_ip_configuration_name = "${var.resource_name_prefix}-frontend-ip"
+    frontend_port_name             = "${var.resource_name_prefix}-port-443"
     protocol                       = "Https"
-    ssl_certificate_name           = "${var.resource_name_prefix}cert"
+    ssl_certificate_name           = "${var.resource_name_prefix}-cert"
   }
 
   request_routing_rule {
-    name                       = "${var.resource_name_prefix}rule1"
+    name                       = "${var.resource_name_prefix}-rule1"
     priority                   = 100
     rule_type                  = "Basic"
-    http_listener_name         = "${var.resource_name_prefix}listener-http"
-    backend_address_pool_name  = "${var.resource_name_prefix}backend-pool-lb"
-    backend_http_settings_name = "${var.resource_name_prefix}http-settings"
+    http_listener_name         = "${var.resource_name_prefix}-listener-http"
+    backend_address_pool_name  = "${var.resource_name_prefix}-backend-pool-lb"
+    backend_http_settings_name = "${var.resource_name_prefix}-http-settings"
   }
 }
 
 resource "azurerm_subnet" "gateway" {
-  name                 = "${var.resource_name_prefix}gateway-subnet"
+  name                 = "${var.resource_name_prefix}-gateway-subnet"
   resource_group_name  = data.azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.network.name
   address_prefixes     = [local.application_gateway_prefix]
@@ -122,7 +122,7 @@ resource "azurerm_subnet_network_security_group_association" "gateway" {
 # Public IP of the application gateway
 # ---------------------------
 resource "azurerm_public_ip" "gateway_ip" {
-  name                = "${var.resource_name_prefix}GatewayIP"
+  name                = "${var.resource_name_prefix}-GatewayIP"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
   allocation_method   = "Static"
@@ -132,7 +132,7 @@ resource "azurerm_public_ip" "gateway_ip" {
 # Application gateway requires to allow inbound traffic on ports 65200 - 65535 of subnet
 # ---------------------------
 resource "azurerm_network_security_rule" "gateway" {
-  name                        = "${var.resource_name_prefix}gateway"
+  name                        = "${var.resource_name_prefix}-gateway"
   priority                    = 300
   direction                   = "Inbound"
   access                      = "Allow"

@@ -13,7 +13,7 @@ resource "azurerm_subnet" "bastion_subnet" {
 # Dedicated public ip for Azure Bastion
 # ----------------------------
 resource "azurerm_public_ip" "bastion_ip" {
-  name                = "${var.resource_name_prefix}bastion-ip"
+  name                = "${var.resource_name_prefix}-bastion-ip"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
   allocation_method   = "Static"
@@ -24,12 +24,12 @@ resource "azurerm_public_ip" "bastion_ip" {
 # Azure Bastion Host
 # ----------------------------
 resource "azurerm_bastion_host" "bastion" {
-  name                = "${var.resource_name_prefix}Bastion"
+  name                = "${var.resource_name_prefix}-Bastion"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
 
   ip_configuration {
-    name                 = "${var.resource_name_prefix}ip-configuration"
+    name                 = "${var.resource_name_prefix}-ip-configuration"
     subnet_id            = azurerm_subnet.bastion_subnet.id
     public_ip_address_id = azurerm_public_ip.bastion_ip.id
   }

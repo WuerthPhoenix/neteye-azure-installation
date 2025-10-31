@@ -33,7 +33,7 @@ locals {
 
 # Internal VIPs
 resource "azurerm_lb" "internal_lb" {
-  name                = "${var.resource_name_prefix}InternalLb"
+  name                = "${var.resource_name_prefix}-InternalLb"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
 
@@ -50,7 +50,7 @@ resource "azurerm_lb" "internal_lb" {
 }
 
 resource "azurerm_lb_backend_address_pool" "internal_lb_backend_pool" {
-  name            = "${var.resource_name_prefix}InternalLbBackendPool"
+  name            = "${var.resource_name_prefix}-InternalLbBackendPool"
   loadbalancer_id = azurerm_lb.internal_lb.id
 }
 resource "azurerm_network_interface_backend_address_pool_association" "internal_lb_ass" {
@@ -64,7 +64,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "internal_
 resource "azurerm_lb_probe" "vip_health_probes" {
   for_each = local.cluster_vips
 
-  name                = "${var.resource_name_prefix}${each.value.name}-VipHealthProbe"
+  name                = "${var.resource_name_prefix}-${each.value.name}-VipHealthProbe"
   loadbalancer_id     = azurerm_lb.internal_lb.id
   port                = each.value.lb_port
   interval_in_seconds = 5
@@ -74,7 +74,7 @@ resource "azurerm_lb_probe" "vip_health_probes" {
 resource "azurerm_lb_rule" "vip_lb_rule" {
   for_each = local.cluster_vips
 
-  name                           = "${var.resource_name_prefix}${each.value.name}-VipLbRule"
+  name                           = "${var.resource_name_prefix}-${each.value.name}-VipLbRule"
   loadbalancer_id                = azurerm_lb.internal_lb.id
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.internal_lb_backend_pool.id]
   protocol                       = "All"
@@ -86,12 +86,12 @@ resource "azurerm_lb_rule" "vip_lb_rule" {
 }
 
 resource "azurerm_lb" "external_lb" {
-  name                = "${var.resource_name_prefix}ExternalLb"
+  name                = "${var.resource_name_prefix}-ExternalLb"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
 
   frontend_ip_configuration {
-    name                          = "${var.resource_name_prefix}lbIpAddress"
+    name                          = "${var.resource_name_prefix}-lbIpAddress"
     subnet_id                     = azurerm_subnet.external.id
     private_ip_address_allocation = "Static"
     # Load balancer ip address should match the cluster ip otherwise neteye nodes will discard the traffic
@@ -100,7 +100,7 @@ resource "azurerm_lb" "external_lb" {
 }
 
 resource "azurerm_lb_backend_address_pool" "external_lb_backend_pool" {
-  name            = "${var.resource_name_prefix}ClusterBackendPool"
+  name            = "${var.resource_name_prefix}-ClusterBackendPool"
   loadbalancer_id = azurerm_lb.external_lb.id
 }
 resource "azurerm_network_interface_backend_address_pool_association" "external_lb_ass" {
@@ -112,7 +112,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "external_
 }
 
 resource "azurerm_lb_probe" "external_vip_health_probe" {
-  name                = "${var.resource_name_prefix}ExternalVipProbe"
+  name                = "${var.resource_name_prefix}-ExternalVipProbe"
   loadbalancer_id     = azurerm_lb.external_lb.id
   port                = local.external_fip_probe_port
   interval_in_seconds = 5
@@ -124,7 +124,7 @@ resource "azurerm_lb_rule" "external_vip_lb_rule" {
     local.external_fip_accessible_ports
   )
 
-  name                           = "${var.resource_name_prefix}${each.key}-ExternalVipLbRule"
+  name                           = "${var.resource_name_prefix}-${each.key}-ExternalVipLbRule"
   loadbalancer_id                = azurerm_lb.external_lb.id
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.external_lb_backend_pool.id]
   protocol                       = "Tcp"

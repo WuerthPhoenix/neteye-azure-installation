@@ -73,3 +73,9 @@ variable "ssl_certificate_path" {
   type        = string
   description = "The path to the PFX SSL certificate to be used by the Application Gateway."
 }
+
+variable "azure_availability_zones" {
+  type        = list(string)
+  description = "A list of availability zones to distribute the VMs across."
+  default     = ["1", "2", "3"]
+}

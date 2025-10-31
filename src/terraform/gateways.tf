@@ -56,7 +56,7 @@ resource "azurerm_application_gateway" "app_gateway" {
   }
 
   gateway_ip_configuration {
-    name      = "${var.resource_name_prefix}gatewway-ip"
+    name      = "${var.resource_name_prefix}gateway-ip"
     subnet_id = azurerm_subnet.gateway.id
   }
 

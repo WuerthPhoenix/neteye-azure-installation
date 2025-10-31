@@ -48,6 +48,7 @@ vm_hostname_template = "neteye%02d.test.it"
 cluster_size         = 2
 vm_size              = "Standard_E4as_v5"
 disk_size            = 256
+ssl_certificate_path = "./path/to/certificate.pfx"
 ```
 
 The variables are:
@@ -65,6 +66,7 @@ The variables are:
 - `vm_size`: the size to be used when creating the virtual machines. Check the 
   [Azure documentation](https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview) for valid values.
 - `disk_size`: the size of the data disk in GB.
+- `ssl_certificate_path`: Path to the .pfx SSL certificate to be used for the application gateway.
 
 ### Provision the resources
 

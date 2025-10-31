@@ -62,8 +62,8 @@ The variables are:
   string %02d where the number of the VM must be written (e.g. `neteye%02d.test.it` for VM 1 will be
   `neteye01.test.it`).
 - `cluster_size`: the number of virtual machines to be created.
-- `vm_size`: the size to be used when creating the virtual machines. Check the Check
-  the [Azure documentation](https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview) for valid values.
+- `vm_size`: the size to be used when creating the virtual machines. Check the 
+  [Azure documentation](https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview) for valid values.
 - `disk_size`: the size of the data disk in GB.
 
 ### Provision the resources
@@ -98,9 +98,9 @@ terraform destroy --var-file "<file defined previously>.tfvars"
 > saved in `terraform.tfstate`).
 
 ## Configure the VMs to create a NetEye cluster
-
-Before starting, make sure that all the machines are able to read `repo.wuerth-phoenix.com` and that your IP is allowed
-to download NetEye packages
+> [!WARNING]
+> Before starting, make sure that all the machines are able to read `repo.wuerth-phoenix.com` and that your IP is allowed
+> to download NetEye packages. If not, you should request to allow the public ip associated with the NAT gateway
 
 ### 1. Transform RHEL to NetEye
 
@@ -125,21 +125,20 @@ On all nodes:
 ### 2. Setup basic cluster
 
 At this point you can follow the guide at [Cluster Nodes - NetEye User Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html), remember to properly configure 
-the `/etc/hosts` file with the internal IPs. Should look like this:
+the `/etc/hosts` file with the internal IPs. Terraform apply will automatically generate on your controller a `hosts.txt`
+file which contains the lines that you should add.
 
-```commandline
-[...]
-10.1.0.4 neteye00.neteyelocal neteye00.example.com neteye00
-10.1.0.5 neteye01.neteyelocal neteye01.example.com neteye01
-10.1.0.6 neteye02.neteyelocal neteye02.example.com neteye02
-<public_ip> neteye.example.com neteye.neteyelocal
+Make sure to point add the cluster hostname to the `/etc/hosts` file (pointing the clusterIp)
+```text
+10.1.0.200  myclusterhostname.com
 ```
+
+> [!IMPORTANT]
+> The `ClusterIp` field in the  `/etc/neteye-cluster` should be set to `10.1.0.200`. This will make cluster nodes accept
+> traffic coming from the "external" load balancer
 
 > [!WARNING]
 > Note that the nodes start from index 00 (and not 01, i.e. `neteye00.example.com`).
->
-> The public IP does not really matter on azure, since we are using a load balancer, but it is required
-> to successfully complete the `neteye install`
 
 
 > [!CAUTION]

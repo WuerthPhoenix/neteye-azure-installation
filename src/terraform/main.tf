@@ -8,9 +8,11 @@ resource "random_password" "admin_password" {
 }
 
 locals {
-  network_prefix = "10.1.0.0/24"
-  # NOTE: The first 4 IPs are reserved by Azure
-  vm_base_ip_idx = 4
+  network_prefix             = "10.1.0.0/24"
+  neteye_cluster_ip          = "10.1.0.200"
+  bastion_network_prefix     = "10.2.0.0/26"
+  application_gateway_prefix = "10.3.0.0/26"
+  vm_base_ip_idx             = 4
 
   vms_configuration = zipmap(
     range(var.cluster_size),
@@ -24,23 +26,9 @@ locals {
 }
 
 resource "azurerm_network_security_group" "external" {
-  name                = "${var.resource_name_prefix}-ExternalSecurityGroup"
+  name                = "${var.resource_name_prefix}ExternalSecurityGroup"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
-}
-
-resource "azurerm_network_security_rule" "ssh" {
-  name                        = "ssh"
-  priority                    = 200
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_range      = 22
-  source_address_prefix       = var.fw_allowed_ssh_network
-  destination_address_prefix  = "*"
-  resource_group_name         = data.azurerm_resource_group.rg.name
-  network_security_group_name = azurerm_network_security_group.external.name
 }
 
 resource "azurerm_subnet_network_security_group_association" "external" {
@@ -48,18 +36,13 @@ resource "azurerm_subnet_network_security_group_association" "external" {
   network_security_group_id = azurerm_network_security_group.external.id
 }
 
-resource "azurerm_public_ip" "vm_public_ips" {
-  for_each = local.vms_configuration
-
-  name                = format("%s%02d-PublicIp", var.resource_name_prefix, each.key)
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
-  allocation_method   = "Static"
-}
-
 resource "azurerm_virtual_network" "network" {
-  name                = "${var.resource_name_prefix}-Vnet"
-  address_space       = [local.network_prefix]
+  name = "${var.resource_name_prefix}Vnet"
+  address_space = [
+    local.network_prefix,
+    local.bastion_network_prefix,
+    local.application_gateway_prefix,
+  ]
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
 }
@@ -83,7 +66,6 @@ resource "azurerm_network_interface" "external_nic" {
     subnet_id                     = azurerm_subnet.external.id
     private_ip_address_allocation = "Static"
     private_ip_address            = each.value.ip
-    public_ip_address_id          = azurerm_public_ip.vm_public_ips[each.key].id
   }
 }
 
@@ -141,4 +123,24 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   network_interface_ids = [azurerm_network_interface.external_nic[each.key].id]
 
+}
+
+# ---------------------------
+# Generate an example of /etc/hosts file
+# ---------------------------
+resource "local_file" "hosts_file" {
+  filename = "${path.module}/hosts.txt"
+
+  content = join("\n", concat(flatten([
+    for key, vm in local.vms_configuration : [
+      "${vm.ip} ${format("neteye%02d.neteyelocal", key)}",
+      "${vm.ip} ${vm.hostname}\n"
+    ]
+    ]
+    )),
+    [
+      "# NetEye Cluster IP",
+      "${local.neteye_cluster_ip} neteye.neteyelocal\n"
+    ]
+  )
 }

@@ -69,14 +69,7 @@ variable "disk_size" {
   }
 }
 
-variable "fw_allowed_ssh_network" {
+variable "ssl_certificate_path" {
   type        = string
-  description = "Ip range to allow SSH access from."
-  default     = "82.193.25.251/32"
-}
-
-variable "azure_availability_zones" {
-  type        = list(string)
-  description = "A list of availability zones to distribute the VMs across."
-  default     = ["1", "2", "3"]
+  description = "The path to the PFX SSL certificate to be used by the Application Gateway."
 }

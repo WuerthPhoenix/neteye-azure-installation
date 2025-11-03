@@ -85,22 +85,17 @@ resource "azurerm_lb_rule" "vip_lb_rule" {
   floating_ip_enabled            = true
 }
 
-# External Floating IP
-resource "azurerm_public_ip" "floating_vip" {
-  name                = "${var.resource_name_prefix}-FloatingVip"
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
-  allocation_method   = "Static"
-}
-
 resource "azurerm_lb" "external_lb" {
   name                = "${var.resource_name_prefix}-ExternalLb"
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = data.azurerm_resource_group.rg.location
 
   frontend_ip_configuration {
-    name                 = "PublicIpAddress"
-    public_ip_address_id = azurerm_public_ip.floating_vip.id
+    name                          = "${var.resource_name_prefix}-lbIpAddress"
+    subnet_id                     = azurerm_subnet.external.id
+    private_ip_address_allocation = "Static"
+    # Load balancer ip address should match the cluster ip otherwise neteye nodes will discard the traffic
+    private_ip_address = local.neteye_cluster_ip
   }
 }
 
@@ -121,7 +116,6 @@ resource "azurerm_lb_probe" "external_vip_health_probe" {
   loadbalancer_id     = azurerm_lb.external_lb.id
   port                = local.external_fip_probe_port
   interval_in_seconds = 5
-  # number_of_probes    = 2
 }
 
 resource "azurerm_lb_rule" "external_vip_lb_rule" {
@@ -138,6 +132,7 @@ resource "azurerm_lb_rule" "external_vip_lb_rule" {
   backend_port                   = each.value
   frontend_ip_configuration_name = azurerm_lb.external_lb.frontend_ip_configuration[0].name
   probe_id                       = azurerm_lb_probe.external_vip_health_probe.id
+  floating_ip_enabled            = true
 }
 
 resource "azurerm_network_security_rule" "neteye_ports" {

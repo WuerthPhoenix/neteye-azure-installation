@@ -10,7 +10,7 @@
 > credentials. **It must be considered a SECRET and must not be lost**.
 
 > [!WARNING]
-> This terraform assumed to used Azure Bring Your Own Subscription for Red Hat. 
+> This terraform assumes to use Azure Bring Your Own Subscription for Red Hat. 
 > 
 > To ensure that your subscription has
 > this feature enabled you can run this command:

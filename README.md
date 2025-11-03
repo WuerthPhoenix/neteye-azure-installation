@@ -1,4 +1,8 @@
 # How to create a NetEye cluster on Azure
+You can use the following guide to create a NetEye cluster on Microsoft Azure using Terraform. 
+
+Be aware that this installation might differ from a regular installation. 
+See the [architecture documentation](doc/architecture.md) for more details.
 
 ## Create and manage resources on Azure using Terraform
 
@@ -130,7 +134,7 @@ You can do so from the Azure Portal:
 ## Configure the VMs to create a NetEye cluster
 > [!WARNING]
 > Before starting, make sure that all the machines are able to read `repo.wuerth-phoenix.com` and that your IP is allowed
-> to download NetEye packages. If not, you should request to allow the public ip associated with the NAT gateway
+> to download NetEye packages. If not, you should request to allow the public IP associated with the NAT gateway
 
 ### 1. Transform RHEL to NetEye
 
@@ -229,3 +233,13 @@ ansible-playbook -i localhost, azure-lb-pcs-resources.yml
 
 You can continue following the NetEye Guide as usual from [Cluster Nodes - NetEye User Guide](https://neteye.guide/current/getting-started/system-installation/cluster.html#ne-service-configuration) onwards. Remember to 
 configure timezone etc...
+
+### 7. Accessing the NetEye web interface
+After completing the setup, you can access the NetEye web interface using the public IP address of the Application Gateway.
+
+> [!WARNING]
+> The gateway provided by terraform will not automatically trust the self-signed certificate of neteye, so you will need to 
+> add it in the gateway configuration.
+> 
+> You can do so in the Azure Portal in the **"Backend settings" > "Backend certificate validation type"** section
+> of the Application Gateway

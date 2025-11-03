@@ -9,8 +9,36 @@
 > Terraform will create a `terraform.tfstate` file, which contains the configuration of the resources on Azure and some
 > credentials. **It must be considered a SECRET and must not be lost**.
 
+> [!WARNING]
+> This terraform assumed to used Azure Bring Your Own Subscription for Red Hat. 
+> 
+> To ensure that your subscription has
+> this feature enabled you can run this command:
+> ```commandline
+> az vm image list --publisher redhat --offer rhel-byos --sku rhel-lvm810-gen2 --all
+> ```
+> and the output should look like the following:
+> ```json
+> [
+>  {
+>    "architecture": "x64",
+>    "imageDeprecationStatus": {
+>      "imageState": "Active"
+>    },
+>    "offer": "rhel-byos",
+>    "publisher": "RedHat",
+>    "sku": "rhel-lvm810-gen2",
+>    "urn": "RedHat:rhel-byos:rhel-lvm810-gen2:8.10.2024060517",
+>    "version": "8.10.2024060517"
+>  }
+> ]
+> ```
+> If you need to use a different one you can change `source_image_reference` and `plan` accordingly to your subscription
+> in `main.tf` file.
+
+
 - The terraform files are kept in the directory `/src/terraform`.
-- Follow this configuration guide to setup the terraform variables, afterwards you can follow the first part of the
+- Follow this configuration guide to setup the terraform variables, afterward you can follow the first part of the
   README.md file to deploy the resources on Azure.
 
 ### Terraform variables configuration

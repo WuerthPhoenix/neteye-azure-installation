@@ -58,7 +58,6 @@
         name:
           - "neteye"
           - "neteye-stable"
-          - "ansible-core" # needed for rpmmirror
         state: present
         enablerepo:
           - "{{ neteye_base_repo }}"
@@ -93,6 +92,8 @@
         state: latest
         disablerepo:
           - "neteye*"
+        exclude:
+          - ansible-core
 
     - name: Configure System | check if dhclinet rpmnew exists
       ansible.builtin.stat: path="/etc/dhcp/dhclient.conf.rpmnew"
